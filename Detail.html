@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Engagement Cycle · LID APAC</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:#f4f7fb; font-family:system-ui, sans-serif; padding:2rem 1.5rem; color:#1a2c3c; }
+        .container { max-width:800px; margin:0 auto; }
+        .header { display:flex; align-items:center; gap:1rem; margin-bottom:2rem; }
+        .back-btn { background:white; border:1px solid #cbd5e1; border-radius:2rem; padding:0.5rem 1rem; font-weight:600; color:#1f6e8c; cursor:pointer; }
+        .back-btn:hover { background:#f1f5f9; }
+        .card { background:white; border-radius:1.5rem; padding:1.5rem; box-shadow:0 2px 12px rgba(0,0,0,0.05); margin-bottom:1.5rem; }
+        .firm-title { font-size:1.5rem; font-weight:700; }
+        .firm-meta { color:#64748b; font-size:0.9rem; }
+        .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-top:0.5rem; font-size:0.85rem; color:#334155; }
+        .progress-label { display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.5rem; }
+        .progress-bar { background:#e2e8f0; height:8px; border-radius:10px; }
+        .progress-fill { background:#1f6e8c; height:8px; border-radius:10px; }
+        .milestone { display:flex; gap:1rem; padding:1rem 0; border-bottom:1px solid #edf2f7; align-items:flex-start; }
+        .milestone:last-child { border-bottom:none; }
+        .check { width:28px; height:28px; border-radius:50%; border:2px solid #cbd5e1; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; font-size:14px; }
+        .check.done { background:#1f6e8c; border-color:#1f6e8c; color:white; }
+        .milestone-content { flex:1; }
+        .milestone-title { font-weight:600; margin-bottom:4px; }
+        .milestone-date { font-size:0.75rem; color:#64748b; }
+        .milestone-date.overdue { color:#dc2626; font-weight:500; }
+        .milestone-cat { font-size:0.7rem; background:#f1f5f9; padding:0.2rem 0.7rem; border-radius:1rem; display:inline-block; margin-top:0.3rem; }
+        .btn { background:#1f6e8c; color:white; border:none; padding:0.6rem 1.4rem; border-radius:2rem; font-weight:600; cursor:pointer; }
+        .btn-outline { background:white; color:#1f6e8c; border:1.5px solid #1f6e8c; }
+        .btn-outline:hover { background:#e8f4f9; }
+        .modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index:1000; }
+        .modal { background:white; border-radius:1.5rem; padding:2rem; width:90%; max-width:600px; max-height:90vh; overflow-y:auto; }
+        .modal h3 { margin-bottom:1.5rem; }
+        .form-group { margin-bottom:1rem; }
+        .form-group label { display:block; font-weight:600; font-size:0.8rem; margin-bottom:0.3rem; }
+        .form-group input, .form-group select { width:100%; padding:0.6rem; border:1px solid #cbd5e1; border-radius:0.8rem; font-size:0.95rem; background:white; }
+        .form-row { display:flex; gap:1rem; }
+        .form-row .form-group { flex:1; }
+        .empty-state { text-align:center; padding:3rem; color:#64748b; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <button class="back-btn" onclick="window.location.href='home.html'">← Back to Home</button>
+        <h1>Client Engagement Cycle</h1>
+    </div>
+    <div id="clientDetail"></div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="modal-overlay" style="display:none;">
+    <div class="modal">
+        <h3>Edit Client Details</h3>
+        <form id="clientForm" onsubmit="saveChanges(event)">
+            <input type="hidden" id="editClientId">
+            <div class="form-group">
+                <label>Firm / Legal Department Name *</label>
+                <input type="text" id="editFirmName" required>
+            </div>
+            <div class="form-group">
+                <label>Primary Practice Area *</label>
+                <select id="editPractice" required>
+                    <option value="">-- Select --</option>
+                    <option value="Corporate/M&A">Corporate/M&A</option>
+                    <option value="Litigation">Litigation</option>
+                    <option value="Regulatory/Compliance">Regulatory/Compliance</option>
+                    <option value="Intellectual Property">Intellectual Property</option>
+                    <option value="Employment">Employment</option>
+                    <option value="Banking & Finance">Banking & Finance</option>
+                    <option value="Real Estate">Real Estate</option>
+                    <option value="Tax">Tax</option>
+                    <option value="General">General</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Firm Size</label>
+                    <select id="editSize">
+                        <option value="Small">Small (1-20)</option>
+                        <option value="Mid-size" selected>Mid-size (21-100)</option>
+                        <option value="Large">Large (101-500)</option>
+                        <option value="Enterprise">Enterprise (500+)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Resources</label>
+                    <select id="editResources">
+                        <option value="Limited">Limited</option>
+                        <option value="Moderate" selected>Moderate</option>
+                        <option value="Abundant">Abundant</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Budget for AI</label>
+                    <select id="editBudget">
+                        <option value="Low">Low</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="High">High</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tech Stack</label>
+                    <input type="text" id="editTechStack" placeholder="e.g., iManage, Salesforce">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Engagement Start Date *</label>
+                <input type="date" id="editEngageDate" required>
+            </div>
+            <div style="text-align:right; margin-top:1.5rem;">
+                <button type="button" class="btn-outline" onclick="closeModal()">Cancel</button>
+                <button type="submit" style="margin-left:0.5rem;">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const KEY = "lid_apac_data";
+
+    // Same generator as home page (must match)
+    function generateTasks(client) {
+        const start = client.signupDate;
+        const practice = client.practice || "General";
+        const size = client.size || "Mid-size";
+        const resources = client.resources || "Moderate";
+        const budget = client.budget || "Medium";
+        const techStack = client.techStack || "Standard DMS";
+
+        let tasks = [];
+        let offset = 0;
+
+        tasks.push({ title:"🎉 Executive Welcome & Strategic Alignment", desc:"Send personalised briefing, share AI transformation vision deck, align with partner/CIO.", phase:"Onboarding", dueOffset:offset }); offset+=3;
+
+        if (techStack.toLowerCase().includes("custom") || size === "Enterprise") {
+            tasks.push({ title:"🧩 Advanced Tech Stack Discovery", desc:`Map AI compatibility with existing systems (${techStack}), identify integration points.`, phase:"Onboarding", dueOffset:offset }); offset+=7;
+        } else {
+            tasks.push({ title:"📋 AI Readiness & Workflow Survey", desc:"Assess current workflows, tech usage, and AI readiness across practice groups.", phase:"Onboarding", dueOffset:offset }); offset+=5;
+        }
+
+        tasks.push({ title:`🎯 ${practice} AI Opportunity Workshop`, desc:"Facilitate 2-hour session with practice leaders to identify high-impact AI use cases.", phase:"Onboarding", dueOffset:offset }); offset+=14;
+
+        if (budget === "Low" || resources === "Limited") {
+            tasks.push({ title:"⚡ Quick-Win Pilot", desc:`Select one high-value, low-effort ${practice} workflow for a 2-week pilot.`, phase:"Adoption", dueOffset:offset }); offset+=14;
+        } else {
+            tasks.push({ title:"🔬 Structured Pilot Program", desc:`Launch 3-month pilot with selected practice groups, define success metrics, assign champions.`, phase:"Adoption", dueOffset:offset }); offset+=30;
+        }
+
+        if (size === "Large" || size === "Enterprise") {
+            tasks.push({ title:"🏫 Change Management & Training", desc:"Roll out firm-wide AI literacy programme, designate practice champions, hold workshops.", phase:"Adoption", dueOffset:offset }); offset+=21;
+        } else {
+            tasks.push({ title:"📚 Core AI Training for Practice Leaders", desc:"Hands-on training session for key users, develop internal playbook.", phase:"Adoption", dueOffset:offset }); offset+=14;
+        }
+
+        if (techStack && techStack.length > 0 && techStack !== "Standard DMS") {
+            tasks.push({ title:"🔗 System Integration Sprint", desc:`Connect AI platform with ${techStack} (e.g., single sign-on, document import).`, phase:"Adoption", dueOffset:offset }); offset+=14;
+        }
+
+        tasks.push({ title:"📊 AI Adoption Health Check", desc:"Review usage metrics, gather feedback, present insights to leadership.", phase:"Adoption", dueOffset:offset }); offset+=30;
+        tasks.push({ title:"📈 Executive Quarterly Business Review", desc:"Present adoption data, co-create next quarter AI strategy goals.", phase:"Expansion", dueOffset:offset }); offset+=45;
+        tasks.push({ title:"🧪 Co-Innovation Lab", desc:"Collaborative workshop to design custom AI workflows tailored to new practice areas.", phase:"Expansion", dueOffset:offset }); offset+=60;
+
+        if (size === "Large" || size === "Enterprise" || budget === "High") {
+            tasks.push({ title:"🏛️ AI Governance Framework", desc:"Establish AI usage policy, ethical guidelines, and oversight committee.", phase:"Expansion", dueOffset:offset }); offset+=45;
+        }
+
+        tasks.push({ title:"🏆 Transformation Champion Recognition", desc:"Publicly acknowledge power users, share internal case study.", phase:"Expansion", dueOffset:offset }); offset+=30;
+        tasks.push({ title:"🌟 Annual AI Strategy Summit", desc:"Full-day review of transformation journey and 12-month roadmap.", phase:"Annual Summit", dueOffset:offset }); offset+=90;
+
+        tasks.forEach((t, i) => {
+            let d = new Date(start);
+            d.setDate(d.getDate() + t.dueOffset);
+            t.dueDate = d.toISOString().split('T')[0];
+            t.id = `t${Date.now()}_${i}`;
+            t.completed = false;
+            t.description = t.desc || t.title;
+            t.category = t.phase;
+        });
+
+        return tasks;
+    }
+
+    function getFirms() { return JSON.parse(localStorage.getItem(KEY) || '[]'); }
+    function saveFirms(firms) { localStorage.setItem(KEY, JSON.stringify(firms)); }
+    function getParam(name) { return new URLSearchParams(window.location.search).get(name); }
+
+    function render() {
+        let id = getParam('id');
+        let cont = document.getElementById('clientDetail');
+        if(!id) { cont.innerHTML = `<div class="empty-state"><h3>No client selected</h3><p><a href="home.html">Go to Home</a></p></div>`; return; }
+        let firms = getFirms();
+        let firm = firms.find(f=>f.id===id);
+        if(!firm) { cont.innerHTML = `<div class="empty-state"><h3>Client not found</h3><p>It may have been deleted. <a href="home.html">Return to Home</a>.</p></div>`; return; }
+
+        let tasks = firm.tasks || [];
+        let done = tasks.filter(t=>t.completed).length;
+        let total = tasks.length;
+        let pct = total ? Math.round((done/total)*100) : 0;
+        let today = new Date().toISOString().split('T')[0];
+
+        let html = `
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div>
+                    <div class="firm-title">${esc(firm.name)}</div>
+                    <div class="firm-meta">${esc(firm.practice || 'General')} · Started ${fmtDate(firm.signupDate)}</div>
+                    <div class="detail-grid">
+                        <div>🏢 ${firm.size || 'N/A'}</div>
+                        <div>💰 Budget: ${firm.budget || 'N/A'}</div>
+                        <div>🛠️ Resources: ${firm.resources || 'N/A'}</div>
+                        <div>💻 ${firm.techStack || 'Standard tech'}</div>
+                    </div>
+                </div>
+                <button class="btn-outline" onclick="editFirm('${firm.id}')">✏️ Edit</button>
+            </div>
+            <div style="margin-top:1.5rem;">
+                <div class="progress-label"><span>Progress</span><span>${done}/${total} (${pct}%)</span></div>
+                <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 style="margin-bottom:1rem;">AI Transformation Milestones</h2>
+            <div>`;
+        tasks.forEach(task => {
+            let overdue = !task.completed && task.dueDate < today;
+            html += `
+            <div class="milestone">
+                <div class="check ${task.completed?'done':''}" onclick="toggle('${firm.id}','${task.id}')">${task.completed?'✓':''}</div>
+                <div class="milestone-content">
+                    <div class="milestone-title" style="${task.completed?'text-decoration:line-through;color:#94a3b8':''}">${esc(task.title)}</div>
+                    <div class="milestone-date ${overdue?'overdue':''}">Due: ${fmtDate(task.dueDate)} (${relDay(task.dueDate)})</div>
+                    <span class="milestone-cat">${task.category}</span>
+                </div>
+            </div>`;
+        });
+        html += `</div></div>`;
+        cont.innerHTML = html;
+    }
+
+    function toggle(firmId, taskId) {
+        let firms = getFirms();
+        let firm = firms.find(f=>f.id===firmId);
+        if(!firm) return;
+        let task = firm.tasks.find(t=>t.id===taskId);
+        if(!task) return;
+        task.completed = !task.completed;
+        saveFirms(firms);
+        render();
+    }
+
+    function editFirm(id) {
+        let firm = getFirms().find(f=>f.id===id);
+        if(!firm) return;
+        document.getElementById('editClientId').value = firm.id;
+        document.getElementById('editFirmName').value = firm.name;
+        document.getElementById('editPractice').value = firm.practice || 'General';
+        document.getElementById('editSize').value = firm.size || 'Mid-size';
+        document.getElementById('editResources').value = firm.resources || 'Moderate';
+        document.getElementById('editBudget').value = firm.budget || 'Medium';
+        document.getElementById('editTechStack').value = firm.techStack || '';
+        document.getElementById('editEngageDate').value = firm.signupDate;
+        document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeModal() { document.getElementById('editModal').style.display = 'none'; }
+
+    function saveChanges(e) {
+        e.preventDefault();
+        let id = document.getElementById('editClientId').value;
+        let name = document.getElementById('editFirmName').value.trim();
+        let practice = document.getElementById('editPractice').value;
+        let size = document.getElementById('editSize').value;
+        let resources = document.getElementById('editResources').value;
+        let budget = document.getElementById('editBudget').value;
+        let techStack = document.getElementById('editTechStack').value.trim();
+        let date = document.getElementById('editEngageDate').value;
+        if(!name || !date) { alert('Name and date required'); return; }
+        let firms = getFirms();
+        let firm = firms.find(f=>f.id===id);
+        if(!firm) return;
+        Object.assign(firm, { name, practice, size, resources, budget, techStack, signupDate: date });
+        firm.tasks = generateTasks(firm);
+        saveFirms(firms);
+        closeModal();
+        render();
+    }
+
+    function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}) : ''; }
+    function esc(s) { return String(s).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
+    function relDay(d) {
+        let now = new Date().toISOString().split('T')[0];
+        let diff = (new Date(d) - new Date(now)) / (1000*60*60*24);
+        if(diff===0) return 'today';
+        if(diff===1) return 'tomorrow';
+        if(diff===-1) return 'yesterday';
+        if(diff<-1) return `${Math.abs(diff)} days ago`;
+        return `in ${diff} days`;
+    }
+
+    window.onclick = function(e) { if(e.target === document.getElementById('editModal')) closeModal(); };
+    window.toggle = toggle;
+    window.editFirm = editFirm;
+    window.closeModal = closeModal;
+
+    document.addEventListener('DOMContentLoaded', render);
+</script>
+</body>
+</html>
